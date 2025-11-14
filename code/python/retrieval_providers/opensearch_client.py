@@ -45,11 +45,11 @@ class OpenSearchClient:
         
         if api_endpoint_raw is None:
             raise ValueError(f"API endpoint not configured for {self.endpoint_name}. Check environment variable configuration.")
-        if credentials_raw is None:
+        if credentials_raw is None and self._requires_credentials():
             raise ValueError(f"API credentials not configured for {self.endpoint_name}. Check environment variable configuration.")
             
         self.api_endpoint = api_endpoint_raw.strip('"').rstrip('/')
-        self.credentials = credentials_raw.strip('"')
+        self.credentials = credentials_raw.strip('"') if credentials_raw else None
         self.default_index_name = self.endpoint_config.index_name or "embeddings"
         # Handle use_knn configuration - default based on endpoint name
         use_knn_config = getattr(self.endpoint_config, 'use_knn', None)
@@ -78,7 +78,11 @@ class OpenSearchClient:
             
         return endpoint_config
     
-    def _get_auth_headers(self) -> Dict[str, str]:
+    def _requires_credentials(self) -> bool:
+        """Indicates whether this client requires credentials from config."""
+        return True
+    
+    def _get_auth_headers(self, method: str = "GET", path: str = "/", body: Optional[bytes] = None) -> Dict[str, str]:
         """
         Get authentication headers for OpenSearch requests.
         Supports both basic auth (username:password) and API key authentication.
@@ -87,6 +91,9 @@ class OpenSearchClient:
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
+        
+        if not self.credentials:
+            return headers
         
         if ':' in self.credentials:
             # Basic authentication (username:password)
@@ -117,7 +124,7 @@ class OpenSearchClient:
             async with httpx.AsyncClient() as client:
                 response = await client.head(
                     f"{self.api_endpoint}/{index_name}",
-                    headers=self._get_auth_headers(),
+                    headers=self._get_auth_headers("HEAD", f"/{index_name}"),
                     timeout=30
                 )
                 if response.status_code == 200:
@@ -208,11 +215,14 @@ class OpenSearchClient:
             }
         
         try:
+            payload = json.dumps(index_mapping).encode("utf-8")
+            headers = self._get_auth_headers("PUT", f"/{index_name}", body=payload)
+            headers["Content-Type"] = "application/json"
             async with httpx.AsyncClient() as client:
                 response = await client.put(
                     f"{self.api_endpoint}/{index_name}",
-                    json=index_mapping,
-                    headers=self._get_auth_headers(),
+                    content=payload,
+                    headers=headers,
                     timeout=60
                 )
                 response.raise_for_status()
@@ -256,7 +266,7 @@ class OpenSearchClient:
             async with httpx.AsyncClient() as client:
                 response = await client.delete(
                     f"{self.api_endpoint}/{index_name}",
-                    headers=self._get_auth_headers(),
+                    headers=self._get_auth_headers("DELETE", f"/{index_name}"),
                     timeout=30
                 )
                 
@@ -327,11 +337,14 @@ class OpenSearchClient:
         }
         
         try:
+            payload = json.dumps(delete_query).encode("utf-8")
+            headers = self._get_auth_headers("POST", f"/{index_name}/_delete_by_query", body=payload)
+            headers["Content-Type"] = "application/json"
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.api_endpoint}/{index_name}/_delete_by_query",
-                    json=delete_query,
-                    headers=self._get_auth_headers(),
+                    content=payload,
+                    headers=headers,
                     timeout=60
                 )
                 response.raise_for_status()
@@ -404,9 +417,9 @@ class OpenSearchClient:
             bulk_lines = []
             for item in bulk_body:
                 bulk_lines.append(json.dumps(item))
-            bulk_data = '\n'.join(bulk_lines) + '\n'
+            bulk_data = ('\n'.join(bulk_lines) + '\n').encode("utf-8")
             
-            headers = self._get_auth_headers()
+            headers = self._get_auth_headers("POST", "/_bulk", body=bulk_data)
             headers["Content-Type"] = "application/x-ndjson"
             
             async with httpx.AsyncClient() as client:
@@ -507,13 +520,16 @@ class OpenSearchClient:
             }
         }
         
+        payload = json.dumps(search_query).encode("utf-8")
         start_retrieve = time.time()
         try:
+            headers = self._get_auth_headers("POST", f"/{index_name}/_search", body=payload)
+            headers["Content-Type"] = "application/json"
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.api_endpoint}/{index_name}/_search",
-                    json=search_query,
-                    headers=self._get_auth_headers(),
+                    content=payload,
+                    headers=headers,
                     timeout=60
                 )
                 response.raise_for_status()
@@ -644,12 +660,15 @@ class OpenSearchClient:
                 }
             }
         
+        payload = json.dumps(search_query).encode("utf-8")
         try:
+            headers = self._get_auth_headers("POST", f"/{index_name}/_search", body=payload)
+            headers["Content-Type"] = "application/json"
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.api_endpoint}/{index_name}/_search",
-                    json=search_query,
-                    headers=self._get_auth_headers(),
+                    content=payload,
+                    headers=headers,
                     timeout=60
                 )
                 response.raise_for_status()
@@ -712,12 +731,15 @@ class OpenSearchClient:
             }
         }
         
+        payload = json.dumps(search_query).encode("utf-8")
         try:
+            headers = self._get_auth_headers("POST", f"/{index_name}/_search", body=payload)
+            headers["Content-Type"] = "application/json"
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.api_endpoint}/{index_name}/_search",
-                    json=search_query,
-                    headers=self._get_auth_headers(),
+                    content=payload,
+                    headers=headers,
                     timeout=60
                 )
                 response.raise_for_status()
@@ -817,11 +839,14 @@ class OpenSearchClient:
                     }
                 }
             
+            payload = json.dumps(search_query).encode("utf-8")
+            headers = self._get_auth_headers("POST", f"/{index_name}/_search", body=payload)
+            headers["Content-Type"] = "application/json"
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.api_endpoint}/{index_name}/_search",
-                    json=search_query,
-                    headers=self._get_auth_headers(),
+                    content=payload,
+                    headers=headers,
                     timeout=60
                 )
                 response.raise_for_status()
@@ -884,11 +909,14 @@ class OpenSearchClient:
         }
         
         try:
+            payload = json.dumps(aggregation_query).encode("utf-8")
+            headers = self._get_auth_headers("POST", f"/{index_name}/_search", body=payload)
+            headers["Content-Type"] = "application/json"
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.api_endpoint}/{index_name}/_search",
-                    json=aggregation_query,
-                    headers=self._get_auth_headers(),
+                    content=payload,
+                    headers=headers,
                     timeout=60
                 )
                 response.raise_for_status()
