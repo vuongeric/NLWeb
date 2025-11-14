@@ -52,6 +52,9 @@ def init():
                 elif db_type == "opensearch":
                     from retrieval_providers.opensearch_client import OpenSearchClient
                     _preloaded_modules[db_type] = OpenSearchClient
+                elif db_type == "opensearch_aws":
+                    from retrieval_providers.opensearch_aws_client import OpenSearchAWSClient
+                    _preloaded_modules[db_type] = OpenSearchAWSClient
                 elif db_type == "qdrant":
                     from retrieval_providers.qdrant import QdrantVectorClient
                     _preloaded_modules[db_type] = QdrantVectorClient
@@ -76,6 +79,7 @@ _db_type_packages = {
     "azure_ai_search": ["azure-core", "azure-search-documents>=11.4.0"],
     "milvus": ["pymilvus>=1.1.0", "numpy"],
     "opensearch": ["httpx>=0.28.1"],
+    "opensearch_aws": ["httpx>=0.28.1"],
     "qdrant": ["qdrant-client>=1.14.0"],
     "snowflake_cortex_search": ["httpx>=0.28.1"],
     "elasticsearch": ["elasticsearch[async]>=8,<9"],
@@ -419,6 +423,9 @@ class VectorDBClient:
         elif db_type == "elasticsearch":
             # Elasticsearch requires endpoint, API key is optional
             return bool(config.api_endpoint)
+        elif db_type == "opensearch_aws":
+            # OpenSearch AWS requires endpoint and optionally api_key (password)
+            return True
         elif db_type == "postgres":
             # PostgreSQL requires endpoint (connection string) and optionally api_key (password)
             return bool(config.api_endpoint)
@@ -471,6 +478,9 @@ class VectorDBClient:
                 elif db_type == "opensearch":
                     from retrieval_providers.opensearch_client import OpenSearchClient
                     client = OpenSearchClient(endpoint_name)
+                elif db_type == "opensearch_aws":
+                    from retrieval_providers.opensearch_aws_client import OpenSearchAWSClient
+                    client = OpenSearchAWSClient(endpoint_name)
                 elif db_type == "qdrant":
                     from retrieval_providers.qdrant import QdrantVectorClient
                     client = QdrantVectorClient(endpoint_name)
