@@ -1,7 +1,9 @@
 # Core dependencies - always required
+aws-requests-auth>=0.4.3
 azure-search-documents>=11.4.0
 # Core dependencies - always required
 azure-identity>=1.15.0
+boto3>=1.39.17
 chardet>=5.2.0
 jsonschema>=4.19.1
 mcp>=1.0.0
@@ -16,6 +18,8 @@ feedparser>=6.0.1
 httpx>=0.28.1
 seaborn>=0.13.0
 openai>=1.12.0
+PyJWT>=2.8.0
+requests-aws4auth>=1.3.1
 
 # Optional LLM provider dependencies
 # NOTE: These packages will be installed AUTOMATICALLY at runtime when you first use a provider.
