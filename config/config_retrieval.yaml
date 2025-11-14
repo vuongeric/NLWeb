@@ -53,6 +53,18 @@ endpoints:
     index_name: nlweb_collection
     db_type: milvus
   
+  opensearch_aws_knn:
+    enabled: false
+    # OpenSearch with k-NN plugin enabled (faster, native vector search)
+    api_endpoint_env: OPENSEARCH_ENDPOINT
+    api_key_env: "N/A"  # AWS SigV4 auth does not use this field
+    # Index name to search in
+    index_name: embeddings
+    # Database type
+    db_type: opensearch_aws
+    # Use k-NN plugin for vector search
+    use_knn: true
+  
   opensearch_knn:
     enabled: false
     # OpenSearch with k-NN plugin enabled (faster, native vector search)
